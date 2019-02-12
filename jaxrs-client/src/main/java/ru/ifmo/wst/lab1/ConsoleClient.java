@@ -138,6 +138,10 @@ public class ConsoleClient {
                     int updatedCount = service.update(arg);
                     System.out.printf("%d rows updated by id %d\n", updatedCount, arg.getId());
                 }
+            } catch (ClientException exc) {
+                System.out.println("Service return not successful status code");
+                System.out.printf("Status code: %d\n", exc.getStatus().getStatusCode());
+                System.out.printf("Message: %s\n", exc.getMessage());
             } catch (Exception exc) {
                 System.out.println("Unknown error");
                 exc.printStackTrace();

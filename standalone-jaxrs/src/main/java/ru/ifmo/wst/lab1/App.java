@@ -2,6 +2,7 @@ package ru.ifmo.wst.lab1;
 
 import com.sun.jersey.api.container.grizzly2.GrizzlyServerFactory;
 import com.sun.jersey.api.core.ClassNamesResourceConfig;
+import com.sun.jersey.api.core.ResourceConfig;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import lombok.SneakyThrows;
@@ -9,7 +10,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.glassfish.grizzly.http.server.HttpServer;
 import ru.ifmo.wst.lab.Configuration;
 import ru.ifmo.wst.lab1.dao.ExterminatusDAO;
+import ru.ifmo.wst.lab1.rs.AllExceptionMapper;
 import ru.ifmo.wst.lab1.rs.ExterminatusResource;
+import ru.ifmo.wst.lab1.rs.ResourceExceptionMapper;
 
 import javax.sql.DataSource;
 import java.io.InputStream;
@@ -27,7 +30,8 @@ public class App {
 
         DataSource dataSource = initDataSource();
         ExterminatusResource.GLOBAL_DAO = new ExterminatusDAO(dataSource);
-        ClassNamesResourceConfig resourceConfig = new ClassNamesResourceConfig(ExterminatusResource.class);
+        ResourceConfig resourceConfig = new ClassNamesResourceConfig(ExterminatusResource.class, ResourceExceptionMapper.class,
+                AllExceptionMapper.class);
         log.info("Start server on {}", baseUrl);
         HttpServer server = GrizzlyServerFactory.createHttpServer(baseUrl, resourceConfig);
         server.start();

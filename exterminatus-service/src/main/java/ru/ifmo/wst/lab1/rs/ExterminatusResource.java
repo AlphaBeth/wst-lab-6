@@ -61,6 +61,7 @@ public class ExterminatusResource {
     @Produces(MediaType.TEXT_PLAIN)
     @SneakyThrows
     public Response create(ExterminatusInfo exterminatusInfo, @Context UriInfo uriInfo) {
+        validate(exterminatusInfo);
         long createdId = exterminatusDAO.create(exterminatusInfo.getInitiator(), exterminatusInfo.getReason(), exterminatusInfo.getMethod(),
                 exterminatusInfo.getPlanet(), exterminatusInfo.getDate());
         UriBuilder builder = uriInfo.getAbsolutePathBuilder();
@@ -73,7 +74,11 @@ public class ExterminatusResource {
     @Produces(MediaType.TEXT_PLAIN)
     @Path("/{id}")
     public String delete(@PathParam("id") long id) {
-        return String.valueOf(exterminatusDAO.delete(id));
+        int deletedCount = exterminatusDAO.delete(id);
+        if (deletedCount <= 0) {
+            throw new ResourceException(String.format("No records deleted by id %d", id), Response.Status.NOT_FOUND);
+        }
+        return String.valueOf(deletedCount);
     }
 
     @POST
@@ -81,7 +86,25 @@ public class ExterminatusResource {
     @SneakyThrows
     @Path("/{id}")
     public String update(@PathParam("id") long updateId, ExterminatusInfo exterminatusInfo) {
-        return String.valueOf(exterminatusDAO.update(updateId, exterminatusInfo.getInitiator(), exterminatusInfo.getReason(),
-                exterminatusInfo.getMethod(), exterminatusInfo.getPlanet(), exterminatusInfo.getDate()));
+        validate(exterminatusInfo);
+        int updatedCount = exterminatusDAO.update(updateId, exterminatusInfo.getInitiator(), exterminatusInfo.getReason(),
+                exterminatusInfo.getMethod(), exterminatusInfo.getPlanet(), exterminatusInfo.getDate());
+        if (updatedCount <= 0) {
+            throw new ResourceException(String.format("No records updated by id %d", updateId), Response.Status.NOT_FOUND);
+        }
+        return String.valueOf(updatedCount);
+    }
+
+    private void validate(ExterminatusInfo exterminatusInfo) {
+        notNull(ParamNames.INTIATOR, exterminatusInfo.getInitiator());
+        notNull(ParamNames.METHOD, exterminatusInfo.getMethod());
+        notNull(ParamNames.PLANET, exterminatusInfo.getPlanet());
+        notNull(ParamNames.DATE, exterminatusInfo.getDate());
+    }
+
+    private void notNull(String argName, Object argValue) {
+        if (argValue == null) {
+            throw new ResourceException(argName + " must be not null");
+        }
     }
 }

@@ -1,6 +1,7 @@
 package ru.ifmo.wst.lab1;
 
 import com.sun.jersey.api.client.Client;
+import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.GenericType;
 import com.sun.jersey.api.client.WebResource;
 import lombok.Getter;
@@ -11,6 +12,7 @@ import ru.ifmo.wst.lab1.model.ExterminatusEntity;
 import ru.ifmo.wst.lab1.model.Filter;
 
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
 import java.util.List;
 
 public class ExterminatusResourceClient {
@@ -33,7 +35,8 @@ public class ExterminatusResourceClient {
     }
 
     public List<ExterminatusEntity> findAll() {
-        return findAllResource.accept(MediaType.APPLICATION_JSON_TYPE).get(EXTERMINATUS_LIST);
+        ClientResponse response = findAllResource.accept(MediaType.APPLICATION_JSON_TYPE).get(ClientResponse.class);
+        return parseResponse(response, EXTERMINATUS_LIST);
     }
 
     public List<ExterminatusEntity> filter(Filter filter) {
@@ -44,27 +47,49 @@ public class ExterminatusResourceClient {
         resource = setParamIfNotNull(resource, ParamNames.PLANET, filter.getPlanet());
         resource = setParamIfNotNull(resource, ParamNames.REASON, filter.getReason());
         resource = setParamIfNotNull(resource, ParamNames.DATE, filter.getDate());
-        return resource.accept(MediaType.APPLICATION_JSON_TYPE).get(EXTERMINATUS_LIST);
+        ClientResponse response = resource.accept(MediaType.APPLICATION_JSON_TYPE).get(ClientResponse.class);
+        return parseResponse(response, EXTERMINATUS_LIST);
     }
 
     public int delete(long exterminatusId) {
-        String body = rootResource.path(String.valueOf(exterminatusId)).accept(MediaType.TEXT_PLAIN_TYPE).delete(String.class);
+        ClientResponse response = rootResource.path(String.valueOf(exterminatusId)).accept(MediaType.TEXT_PLAIN_TYPE).delete(ClientResponse.class);
+        String body = parseResponse(response, String.class);
         return Integer.parseInt(body);
     }
 
     public long create(ExterminatusInfo exterminatusInfo) {
-        String body = rootResource.accept(MediaType.TEXT_PLAIN_TYPE, MediaType.APPLICATION_JSON_TYPE)
-                .entity(exterminatusInfo, MediaType.APPLICATION_JSON_TYPE).put(String.class);
+        ClientResponse response = rootResource.accept(MediaType.TEXT_PLAIN_TYPE, MediaType.APPLICATION_JSON_TYPE)
+                .entity(exterminatusInfo, MediaType.APPLICATION_JSON_TYPE).put(ClientResponse.class);
+        String body = parseResponse(response, String.class);
         return Long.parseLong(body);
     }
 
     public int update(ExterminatusEntity ee) {
         ExterminatusInfo info = fromEntity(ee);
-        String updateResponse = rootResource.path(String.valueOf(ee.getId()))
+        ClientResponse response = rootResource.path(String.valueOf(ee.getId()))
                 .entity(info, MediaType.APPLICATION_JSON_TYPE)
                 .accept(MediaType.TEXT_PLAIN_TYPE)
-                .post(String.class);
+                .post(ClientResponse.class);
+        String updateResponse = parseResponse(response, String.class);
         return Integer.parseInt(updateResponse);
+    }
+
+    private <T> T parseResponse(ClientResponse response, Class<T> entityClass) {
+        checkStatusCode(response);
+        return response.getEntity(entityClass);
+    }
+
+    private <T> T parseResponse(ClientResponse response, GenericType<T> gt) {
+        checkStatusCode(response);
+        return response.getEntity(gt);
+    }
+
+    private void checkStatusCode(ClientResponse response) {
+        Response.StatusType status = response.getStatusInfo();
+        Response.Status.Family family = status.getFamily();
+        if (family != Response.Status.Family.SUCCESSFUL) {
+            throw new ClientException(response.getEntity(String.class), status);
+        }
     }
 
     private ExterminatusInfo fromEntity(ExterminatusEntity ee) {
