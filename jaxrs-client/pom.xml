@@ -29,9 +29,9 @@
                             <mainClass>ru.ifmo.wst.lab1.ConsoleClient</mainClass>
                         </manifest>
                     </archive>
-                    <descriptorRefs>
-                        <desctiptorRef>jar-with-dependencies</desctiptorRef>
-                    </descriptorRefs>
+                    <descriptors>
+                        <descriptor>src/assembly/depmerge.xml</descriptor>
+                    </descriptors>
                 </configuration>
             </plugin>
 

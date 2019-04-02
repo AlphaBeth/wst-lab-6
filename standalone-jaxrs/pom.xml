@@ -34,9 +34,9 @@
                             <mainClass>ru.ifmo.wst.lab1.App</mainClass>
                         </manifest>
                     </archive>
-                    <descriptorRefs>
-                        <desctiptorRef>jar-with-dependencies</desctiptorRef>
-                    </descriptorRefs>
+                    <descriptors>
+                        <descriptor>src/assembly/depmerge.xml</descriptor>
+                    </descriptors>
                 </configuration>
             </plugin>
 
