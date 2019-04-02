@@ -1,21 +1,20 @@
 package ru.ifmo.wst.lab1;
 
-import com.sun.jersey.api.container.grizzly2.GrizzlyServerFactory;
-import com.sun.jersey.api.core.ClassNamesResourceConfig;
-import com.sun.jersey.api.core.ResourceConfig;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.glassfish.grizzly.http.server.HttpServer;
+import org.glassfish.hk2.utilities.binding.AbstractBinder;
+import org.glassfish.jersey.grizzly2.httpserver.GrizzlyHttpServerFactory;
+import org.glassfish.jersey.server.ResourceConfig;
 import ru.ifmo.wst.lab.Configuration;
 import ru.ifmo.wst.lab1.dao.ExterminatusDAO;
-import ru.ifmo.wst.lab1.rs.AllExceptionMapper;
 import ru.ifmo.wst.lab1.rs.ExterminatusResource;
-import ru.ifmo.wst.lab1.rs.ResourceExceptionMapper;
 
 import javax.sql.DataSource;
 import java.io.InputStream;
+import java.net.URI;
 import java.util.Properties;
 
 @Slf4j
@@ -29,11 +28,15 @@ public class App {
         String baseUrl = scheme + "//" + host + ":" + port;
 
         DataSource dataSource = initDataSource();
-        ExterminatusResource.GLOBAL_DAO = new ExterminatusDAO(dataSource);
-        ResourceConfig resourceConfig = new ClassNamesResourceConfig(ExterminatusResource.class, ResourceExceptionMapper.class,
-                AllExceptionMapper.class);
+        ResourceConfig resourceConfig = new ResourceConfig().packages("ru.ifmo.wst");
+        resourceConfig.register(new AbstractBinder() {
+            @Override
+            protected void configure() {
+                bind(new ExterminatusDAO(dataSource)).to(ExterminatusDAO.class);
+            }
+        });
         log.info("Start server on {}", baseUrl);
-        HttpServer server = GrizzlyServerFactory.createHttpServer(baseUrl, resourceConfig);
+        HttpServer server = GrizzlyHttpServerFactory.createHttpServer(URI.create(baseUrl), resourceConfig);
         server.start();
         Runtime.getRuntime().addShutdownHook(new Thread(server::stop));
         log.info("Application was successfully started");

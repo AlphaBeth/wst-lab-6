@@ -1,9 +1,5 @@
 package ru.ifmo.wst.lab1;
 
-import com.sun.jersey.api.client.Client;
-import com.sun.jersey.api.client.ClientResponse;
-import com.sun.jersey.api.client.GenericType;
-import com.sun.jersey.api.client.WebResource;
 import lombok.Getter;
 import ru.ifmo.wst.lab.ExterminatusInfo;
 import ru.ifmo.wst.lab.ExterminatusPaths;
@@ -11,9 +7,14 @@ import ru.ifmo.wst.lab.ParamNames;
 import ru.ifmo.wst.lab1.model.ExterminatusEntity;
 import ru.ifmo.wst.lab1.model.Filter;
 
+import javax.ws.rs.client.ClientBuilder;
+import javax.ws.rs.client.WebTarget;
+import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.util.List;
+
+import static javax.ws.rs.client.Entity.entity;
 
 public class ExterminatusResourceClient {
 
@@ -22,73 +23,72 @@ public class ExterminatusResourceClient {
             };
     @Getter
     private final String baseUrl;
-    private final WebResource findAllResource;
-    private final WebResource filterResource;
-    private final WebResource rootResource;
+    private final WebTarget findAllResource;
+    private final WebTarget filterResource;
+    private final WebTarget rootResource;
 
 
     public ExterminatusResourceClient(String baseUrl) {
         this.baseUrl = baseUrl + ExterminatusPaths.ROOT_PATH;
-        this.findAllResource = Client.create().resource(url(ExterminatusPaths.FIND_ALL_PATH));
-        this.filterResource = Client.create().resource(url(ExterminatusPaths.FILTER_PATH));
-        this.rootResource = Client.create().resource(url());
+        this.findAllResource = ClientBuilder.newClient().target(url(ExterminatusPaths.FIND_ALL_PATH));
+        this.filterResource = ClientBuilder.newClient().target(url(ExterminatusPaths.FILTER_PATH));
+        this.rootResource = ClientBuilder.newClient().target(url());
     }
 
     public List<ExterminatusEntity> findAll() {
-        ClientResponse response = findAllResource.accept(MediaType.APPLICATION_JSON_TYPE).get(ClientResponse.class);
+        Response response = findAllResource.request().accept(MediaType.APPLICATION_JSON_TYPE).buildGet().invoke();
         return parseResponse(response, EXTERMINATUS_LIST);
     }
 
     public List<ExterminatusEntity> filter(Filter filter) {
-        WebResource resource = filterResource;
+        WebTarget resource = filterResource;
         resource = setParamIfNotNull(resource, ParamNames.ID, filter.getId());
         resource = setParamIfNotNull(resource, ParamNames.INTIATOR, filter.getInitiator());
         resource = setParamIfNotNull(resource, ParamNames.METHOD, filter.getMethod());
         resource = setParamIfNotNull(resource, ParamNames.PLANET, filter.getPlanet());
         resource = setParamIfNotNull(resource, ParamNames.REASON, filter.getReason());
         resource = setParamIfNotNull(resource, ParamNames.DATE, filter.getDate());
-        ClientResponse response = resource.accept(MediaType.APPLICATION_JSON_TYPE).get(ClientResponse.class);
+        Response response = resource.request().accept(MediaType.APPLICATION_JSON_TYPE).get(Response.class);
         return parseResponse(response, EXTERMINATUS_LIST);
     }
 
     public int delete(long exterminatusId) {
-        ClientResponse response = rootResource.path(String.valueOf(exterminatusId)).accept(MediaType.TEXT_PLAIN_TYPE).delete(ClientResponse.class);
+        Response response = rootResource.path(String.valueOf(exterminatusId)).request().accept(MediaType.TEXT_PLAIN_TYPE).delete(Response.class);
         String body = parseResponse(response, String.class);
         return Integer.parseInt(body);
     }
 
     public long create(ExterminatusInfo exterminatusInfo) {
-        ClientResponse response = rootResource.accept(MediaType.TEXT_PLAIN_TYPE, MediaType.APPLICATION_JSON_TYPE)
-                .entity(exterminatusInfo, MediaType.APPLICATION_JSON_TYPE).put(ClientResponse.class);
+        Response response = rootResource.request().accept(MediaType.TEXT_PLAIN_TYPE, MediaType.APPLICATION_JSON_TYPE)
+                .put(entity(exterminatusInfo, MediaType.APPLICATION_JSON_TYPE), Response.class);
         String body = parseResponse(response, String.class);
         return Long.parseLong(body);
     }
 
     public int update(ExterminatusEntity ee) {
         ExterminatusInfo info = fromEntity(ee);
-        ClientResponse response = rootResource.path(String.valueOf(ee.getId()))
-                .entity(info, MediaType.APPLICATION_JSON_TYPE)
+        Response response = rootResource.path(String.valueOf(ee.getId())).request()
                 .accept(MediaType.TEXT_PLAIN_TYPE)
-                .post(ClientResponse.class);
+                .post(entity(ee, MediaType.APPLICATION_JSON_TYPE), Response.class);
         String updateResponse = parseResponse(response, String.class);
         return Integer.parseInt(updateResponse);
     }
 
-    private <T> T parseResponse(ClientResponse response, Class<T> entityClass) {
+    private <T> T parseResponse(Response response, Class<T> entityClass) {
         checkStatusCode(response);
-        return response.getEntity(entityClass);
+        return response.readEntity(entityClass);
     }
 
-    private <T> T parseResponse(ClientResponse response, GenericType<T> gt) {
+    private <T> T parseResponse(Response response, GenericType<T> gt) {
         checkStatusCode(response);
-        return response.getEntity(gt);
+        return response.readEntity(gt);
     }
 
-    private void checkStatusCode(ClientResponse response) {
+    private void checkStatusCode(Response response) {
         Response.StatusType status = response.getStatusInfo();
         Response.Status.Family family = status.getFamily();
         if (family != Response.Status.Family.SUCCESSFUL) {
-            throw new ClientException(response.getEntity(String.class), status);
+            throw new ClientException(response.readEntity(String.class), status);
         }
     }
 
@@ -104,7 +104,7 @@ public class ExterminatusResourceClient {
         return baseUrl;
     }
 
-    private WebResource setParamIfNotNull(WebResource resource, String paramName, Object value) {
+    private WebTarget setParamIfNotNull(WebTarget resource, String paramName, Object value) {
         if (value == null) {
             return resource;
         }
