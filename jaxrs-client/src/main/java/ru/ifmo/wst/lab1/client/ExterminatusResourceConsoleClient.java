@@ -4,6 +4,7 @@ import lombok.Getter;
 import lombok.SneakyThrows;
 import ru.ifmo.wst.lab.Box;
 import ru.ifmo.wst.lab.ExterminatusInfo;
+import ru.ifmo.wst.lab.Pair;
 import ru.ifmo.wst.lab1.ClientException;
 import ru.ifmo.wst.lab1.ExterminatusResourceClient;
 import ru.ifmo.wst.lab1.command.Command;
@@ -97,9 +98,14 @@ public class ExterminatusResourceConsoleClient {
                 asList(
                         new CommandArg<>(ID_COMMAND_ARG, Box::setValue)
                 ), Box::new, this::delete);
+        Command<Pair<String, String>> authCommand = new Command<>("auth", "Change auth info",
+                asList(
+                        new CommandArg<>(new StringArg("username", "Username"), Pair::setLeft),
+                        new CommandArg<>(new StringArg("password", "Password"), Pair::setRight)
+                ), Pair::new, this::updateAuth);
         Command<Void> exitCommand = new Command<>("exit", "Exit application", (arg) -> this.exit = true);
         this.commandInterpreter = new CommandInterpreter(() -> readLine(bufferedReader),
-                System.out::print, asList(infoCommand, changeEndpointAddressCommand, findAllCommand, filterCommand,
+                System.out::print, asList(infoCommand, changeEndpointAddressCommand, authCommand, findAllCommand, filterCommand,
                 createCommand, updateCommand, deleteCommand, exitCommand),
                 "No command found",
                 "Enter command", "> ");
@@ -161,6 +167,11 @@ public class ExterminatusResourceConsoleClient {
 
     private void delete(Box<Long> id) {
         delete(id.getValue());
+    }
+
+    private void updateAuth(Pair<String, String> authInfo) {
+        this.service.setUsername(authInfo.getLeft());
+        this.service.setPassword(authInfo.getRight());
     }
 
     public void info() {

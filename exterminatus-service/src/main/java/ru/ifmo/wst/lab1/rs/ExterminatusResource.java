@@ -59,6 +59,7 @@ public class ExterminatusResource {
     @PUT
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.TEXT_PLAIN)
+    @Secured
     @SneakyThrows
     public Response create(ExterminatusInfo exterminatusInfo, @Context UriInfo uriInfo) {
         validate(exterminatusInfo);
@@ -70,6 +71,7 @@ public class ExterminatusResource {
     }
 
     @DELETE
+    @Secured
     @SneakyThrows
     @Produces(MediaType.TEXT_PLAIN)
     @Path("/{id}")
@@ -84,6 +86,7 @@ public class ExterminatusResource {
     @POST
     @Produces(MediaType.TEXT_PLAIN)
     @SneakyThrows
+    @Secured
     @Path("/{id}")
     public String update(@PathParam("id") long updateId, ExterminatusInfo exterminatusInfo) {
         validate(exterminatusInfo);
