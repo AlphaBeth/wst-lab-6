@@ -31,17 +31,13 @@ import java.util.List;
 @Produces({MediaType.APPLICATION_JSON})
 public class ExterminatusResource {
 
-    public static ExterminatusDAO GLOBAL_DAO;
-
     @Inject
     private ExterminatusDAO exterminatusDAO;
 
     public ExterminatusResource() {
-        exterminatusDAO = GLOBAL_DAO;
     }
 
     @GET
-    @Path(ExterminatusPaths.FIND_ALL_PATH)
     @SneakyThrows
     public List<ExterminatusEntity> findAll() {
         return exterminatusDAO.findAll();
@@ -56,7 +52,7 @@ public class ExterminatusResource {
         return exterminatusDAO.filter(id, initiator, reason, method, planet, date);
     }
 
-    @PUT
+    @POST
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.TEXT_PLAIN)
     @Secured
@@ -83,7 +79,7 @@ public class ExterminatusResource {
         return String.valueOf(deletedCount);
     }
 
-    @POST
+    @PUT
     @Produces(MediaType.TEXT_PLAIN)
     @SneakyThrows
     @Secured

@@ -38,7 +38,7 @@ public class ExterminatusResourceClient {
 
     public ExterminatusResourceClient(String baseUrl) {
         this.baseUrl = baseUrl + ExterminatusPaths.ROOT_PATH;
-        this.findAllResource = ClientBuilder.newClient().target(url(ExterminatusPaths.FIND_ALL_PATH));
+        this.findAllResource = ClientBuilder.newClient().target(url());
         this.filterResource = ClientBuilder.newClient().target(url(ExterminatusPaths.FILTER_PATH));
         this.rootResource = ClientBuilder.newClient().target(url());
     }
@@ -70,7 +70,7 @@ public class ExterminatusResourceClient {
     public long create(ExterminatusInfo exterminatusInfo) {
         Invocation.Builder builder = rootResource.request();
         Response response = setAuth(builder).accept(MediaType.TEXT_PLAIN_TYPE, MediaType.APPLICATION_JSON_TYPE)
-                .put(entity(exterminatusInfo, MediaType.APPLICATION_JSON_TYPE), Response.class);
+                .post(entity(exterminatusInfo, MediaType.APPLICATION_JSON_TYPE), Response.class);
         String body = parseResponse(response, String.class);
         return Long.parseLong(body);
     }
@@ -80,7 +80,7 @@ public class ExterminatusResourceClient {
         Invocation.Builder request = rootResource.path(String.valueOf(ee.getId())).request();
         Response response = setAuth(request)
                 .accept(MediaType.TEXT_PLAIN_TYPE)
-                .post(entity(info, MediaType.APPLICATION_JSON_TYPE), Response.class);
+                .put(entity(info, MediaType.APPLICATION_JSON_TYPE), Response.class);
         String updateResponse = parseResponse(response, String.class);
         return Integer.parseInt(updateResponse);
     }
